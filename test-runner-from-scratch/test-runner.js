@@ -1,9 +1,8 @@
 import { AsyncResource, executionAsyncResource } from 'node:async_hooks';
-
 const asyncResource = new AsyncResource('TEST');
 
-function getContext(fn) {
-    asyncResource.runInAsyncScope(async () => {
+async function getContext(fn) {
+    return asyncResource.runInAsyncScope(async () => {
         const context = {
             getContextData: () => {
                 return executionAsyncResource().data ?? {};
@@ -12,7 +11,9 @@ function getContext(fn) {
                 executionAsyncResource().data = data;
             }
         };
-        await fn(context);
+
+        return fn(context);
+
     });
 }
 
