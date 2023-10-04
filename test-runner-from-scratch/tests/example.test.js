@@ -5,7 +5,7 @@ import { describe } from '../test-runner.js';
 describe('[parallel] - My suite 0', ({ it, before }) => {
     before(async () => {
         await setTimeout(100);
-        console.count('Global [before] Hook on [My suite 0]');
+        console.count('[before] Hook on [My suite 0]');
     });
 
     it('test 0', async (ctx) => {
@@ -16,7 +16,7 @@ describe('[parallel] - My suite 0', ({ it, before }) => {
     });
 })
 
-describe('[parallel] - My suite 1', ({ it, before, beforeEach }) => {
+describe('[parallel] - My suite 1', ({ before, beforeEach }) => {
 
     before(async () => {
         await setTimeout(100);
@@ -25,15 +25,15 @@ describe('[parallel] - My suite 1', ({ it, before, beforeEach }) => {
 
     beforeEach(async () => {
         await setTimeout(50);
-        console.count('[beforeEach] Hook on [My suite 1]');
+        console.count('\n[beforeEach] Hook on [My suite 1]');
     });
 
-    describe('My sub suite 1', () => {
+    describe('My sub suite 1', ({ it, beforeEach }) => {
         let items = []
-        before(async () => {
+        beforeEach(async () => {
             await setTimeout(100);
             items.push('')
-            console.count('[before] hook on sub suite [My sub suite 1]');
+            console.count('\n[beforeEach] hook on sub suite [My sub suite 1]');
         });
 
         it('test 1', async (ctx) => {
@@ -52,12 +52,13 @@ describe('[parallel] - My suite 1', ({ it, before, beforeEach }) => {
             deepStrictEqual(ctx.getContextData(), expected)
 
             before(async () => {
-                console.log('[before] hook inside [test 2] on suite [My sub suite]');
+                console.log('\n[before] hook inside [test 2] on suite [My sub suite 1]');
             });
         });
 
         it('test 3 - items', async () => {
-            deepStrictEqual(items.length, 3)
+            console.log('Items length:', items.length);
+            deepStrictEqual(items.length, 5)
         })
     })
 });
