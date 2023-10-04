@@ -2,7 +2,7 @@
 
 Intro
     - POV of a Node.js contributor
-    - Shout out to Colin Ihig, Benjamin and Mosh Atlow and
+    - Shout out to Colin Ihig, Benjamin and Mosh Atlow and the @nodejs/test_runner team https://github.com/orgs/nodejs/teams/test_runner
 
 - History -> Node test runner colin -> first PR
     Init
@@ -10,10 +10,38 @@ Intro
             > Who will extend the @types/node package with a new node:test module?
                 As always, the maintainers of https://github.com/DefinitelyTyped/DefinitelyTyped/tree/HEAD/types/node.
 
-
 - Why having a native solution whereas have a lot of other frameworks working already?
+    Drawbacks
+        Less Flexibility:
+            Third-party tools often provide more configuration options.
+            Embedding might mean a more "one-size-fits-all" approach.
+            Hard to tell wheter this should be implemented in core or on an external package
 
-- Never seen that? Since v17 - stable on v20
+        Maintenance Overhead:
+            Node.js maintainers would have an additional tool to keep updated and bug-free.
+    Benefits
+
+        Consistency:
+            - Developers wouldn't have to debate which test runner to use; they would have a default option.
+
+        Seamless Integration:
+            - Test runners in the core might have better integration with Node.js's internal modules and diagnostics.
+            - Might be faster as it uses internal code and would follow the Node.js' internal lifecycle
+
+        Boost Testing Culture:
+            - Having a test runner as part of the core can emphasize the importance of testing in the Node.js community.
+
+        - No need to have polyfills to make a library work on all places JavaScript runs
+        - Always Supports the newest JavaScript / Node.js versions
+        - No need to keep track on security issues or 3rd package libraries
+
+    parseArgs:
+        util: parseArgs should support required in options[key] #44564 - https://github.com/nodejs/node/issues/44564
+            https://github.com/pkgjs/parseargs/issues/150
+        docs: https://nodejs.org/api/util.html#utilparseargsconfig
+        yargs - https://www.npmjs.com/package/yargs
+
+- Never seen that? Since v16 - stable on v20
     Add Mocha/Jest like APIs to node:test #43415 - https://github.com/nodejs/node/issues/43415
     test_runner: add Subtest to tap protocol output #43417 - https://github.com/nodejs/node/pull/43417
     Request: mark test runner stable in Node 20.0.0 #46642 - https://github.com/nodejs/node/issues/46642
@@ -22,6 +50,8 @@ Intro
     -> we need your feedback
 
 - TAP -> Test All Things
+    https://testanything.org/
+
     -> show isaac experiment
         Interoperability with the Node.js Built-in Test Runner - https://node-tap.org/node-test-interop/
         https://twitter.com/cjihrig/status/1703071165483188475
@@ -154,6 +184,7 @@ Plus
 
     trick for checking flaky tests
         - _activeHandles
+        - why-is-node-running - https://www.npmjs.com/package/why-is-node-running
 
     trick for checking flaky tests
         - loop with python
