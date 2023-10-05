@@ -7,7 +7,7 @@ runner.on('testStart', (data) => {
 });
 
 runner.on('testEnd', ({ elapsedTimeMs, name }) => {
-    console.log(`\n✅ Hook [${name}] ended. Elapsed time: ${elapsedTimeMs}ms`);
+    console.log(`\n✅ Hook [${name}] ended. Elapsed time: ${elapsedTimeMs}ms\n`);
 });
 
 describe('My suite 0', () => {
@@ -82,6 +82,16 @@ describe('SuiteName', () => {
     describe('SubSuite', () => {
         describe('SubSuite', () => {
             it('TestName', () => {
+                Logger.log('This is a message');
+            });
+        });
+    });
+});
+
+describe('SuiteName2', () => {
+    describe('SubSuite2', () => {
+        describe('SubSuite2', () => {
+            it('TestName2', () => {
                 Logger.log('This is a message');
             });
         });

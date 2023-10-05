@@ -1,10 +1,10 @@
 {
   "name": "test-runner-from-scratch",
   "version": "0.0.1",
-  "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node ./tests/example.test.js"
+    "test": "node ./tests/example.test.js",
+    "api-example": "node ./webapi-asyncLocalStorage.js"
   },
   "keywords": [],
   "author": "erickwendel",
@@ -12,5 +12,9 @@
   "type": "module",
   "engines": {
     "node": "v18.17.0"
-  }
+  },
+  "directories": {
+    "test": "tests"
+  },
+  "description": ""
 }
