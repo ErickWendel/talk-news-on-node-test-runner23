@@ -3,14 +3,14 @@ import { deepStrictEqual } from 'node:assert';
 import { Logger, runner } from '../test-runner.js';
 
 runner.on('testStart', (data) => {
-    Logger.log(`\n🚀 Test ${data.name} started.`);
+    // console.log(`\n🚀 Test ${data.name} started.`);
 });
 
 runner.on('testEnd', ({ elapsedTimeMs, name }) => {
-    Logger.log(`✅ Test ${name} ended. Elapsed time: ${elapsedTimeMs}ms`);
+    console.log(`\n✅ Hook [${name}] ended. Elapsed time: ${elapsedTimeMs}ms`);
 });
 
-describe('[parallel] - My suite 0', () => {
+describe('My suite 0', () => {
     before(async () => {
         await setTimeout(100);
         Logger.count('[before] Hook on [My suite 0]');
@@ -19,7 +19,7 @@ describe('[parallel] - My suite 0', () => {
     it('test 0', async (ctx) => {
         const expected = {
             name: 'test 0',
-            tree: '[parallel] - My suite 0',
+            tree: 'My suite 0',
             type: 'it'
         };
         Logger.log('hey logger!');
@@ -27,7 +27,7 @@ describe('[parallel] - My suite 0', () => {
     });
 });
 
-describe('[parallel] - My suite 1', () => {
+describe('My suite 1', () => {
     before(async () => {
         await setTimeout(100);
         Logger.count('\n[before] Hook on [My suite 1]');
@@ -50,7 +50,7 @@ describe('[parallel] - My suite 1', () => {
             items.push('');
             const expected = {
                 name: 'test 1',
-                tree: '[parallel] - My suite 0\n    [parallel] - My suite 1\n        My sub suite 1',
+                tree: 'My suite 1\n    My sub suite 1',
                 type: 'it'
             };
             Logger.log('hey there!***');
@@ -61,18 +61,18 @@ describe('[parallel] - My suite 1', () => {
             items.push('');
             const expected = {
                 name: 'test 2',
-                tree: '[parallel] - My suite 0\n    [parallel] - My suite 1\n        My sub suite 1',
+                tree: 'My suite 1\n    My sub suite 1',
                 type: 'it'
             };
             deepStrictEqual(ctx, expected);
 
             before(async () => {
-                // Logger.log('\n[before] hook inside [test 2] on suite [My sub suite 1]');
+                Logger.count('\n[before] hook inside [test 2] on suite [My sub suite 1]');
             });
         });
 
         it('test 3 - items', async () => {
-            // Logger.log('Items length:', items.length);
+            Logger.log('Items length:', items.length);
             deepStrictEqual(items.length, 5);
         });
     });

@@ -19,20 +19,20 @@ const buildDependencyTree = (suiteStack, message) => {
 }
 
 class Logger {
-    static log(message) {
+    static log(...args) {
         const context = asyncLocalStorage.getStore() || {};
         const suiteStack = context.suiteStack || [];
         console.log(
             '\n',
-            buildDependencyTree(suiteStack, message),
+            buildDependencyTree(suiteStack, args.join(' ')),
             '\n'
         );
     }
-    static count(message) {
+    static count(...args) {
         const context = asyncLocalStorage.getStore() || {};
         const suiteStack = context.suiteStack || [];
         console.count(
-            buildDependencyTree(suiteStack, message),
+            buildDependencyTree(suiteStack, args.join(' ')),
         );
     }
 }
@@ -49,30 +49,40 @@ class TestSuite {
 class TestRunner extends EventEmitter {
     constructor() {
         super();
-
-        this.suitesStack = [];
     }
-
 
     describe(name, fn) {
         const suite = new TestSuite(name);
-        this.suitesStack.push(suite);
+        let currentStack;
+
+        // Fetch the current stack and append the new suite to it
+        const context = asyncLocalStorage.getStore() || {};
+        if (context.suiteStack) {
+            currentStack = [...context.suiteStack, suite];
+        } else {
+            currentStack = [suite];
+        }
 
         asyncLocalStorage.run({
-            suiteStack: this.suitesStack.slice()
+            suiteStack: currentStack
         }, async () => {
             await fn();
-            await this.runSuite(suite);
+            await this.runSuite(suite, currentStack);
             this.emit('suiteEnd', suite);
-            this.suitesStack.pop();
         });
     }
 
     getCurrentSuite() {
-        return this.suitesStack[this.suitesStack.length - 1];  // This will now return the TestSuite instance
+        const context = asyncLocalStorage.getStore() || {};
+        const suiteStack = context.suiteStack;
+        const currentSuite = suiteStack[suiteStack.length - 1];
+        currentSuite.beforeEachHooks ??= [];
+        currentSuite.beforeHooks ??= [];
+
+        return currentSuite
     }
 
-    async runSuite(suite) {
+    async runSuite(suite, currentStack) {
         for (const hook of suite.beforeHooks) {
             await hook();
         }
@@ -89,7 +99,6 @@ class TestRunner extends EventEmitter {
         return async () => {
             const startedAt = process.hrtime.bigint();
 
-            // Preserve current suite context and merge with test data
             const currentContext = asyncLocalStorage.getStore() || {};
             const info = {
                 ...data,
@@ -97,6 +106,7 @@ class TestRunner extends EventEmitter {
             }
             this.emit('testStart', info);
 
+            // Extend the current suite stack with the new test info
             const mergedContext = {
                 suiteStack: [...currentContext.suiteStack, info]
             };
@@ -108,8 +118,8 @@ class TestRunner extends EventEmitter {
                 this.emit('testEnd', { ...info, elapsedTimeMs });
             });
         }
-
     }
+
     it(description, testFn) {
         const suite = this.getCurrentSuite();
         suite.tests.push(this.wrapTest({ name: description, type: 'it' }, testFn));
