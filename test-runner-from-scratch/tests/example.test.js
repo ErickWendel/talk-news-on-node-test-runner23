@@ -1,7 +1,7 @@
 import { setTimeout } from 'node:timers/promises';
 import { deepStrictEqual } from 'node:assert';
 import { Logger, runner } from '../test-runner.js';
-
+const { describe, it, before, beforeEach} = global; // was injected after importing there
 runner.on('testStart', (data) => {
     // console.log(`\n🚀 Test ${data.name} started.`);
 });

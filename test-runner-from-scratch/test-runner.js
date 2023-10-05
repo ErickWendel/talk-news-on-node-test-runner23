@@ -143,4 +143,7 @@ global.it = runner.it.bind(runner);
 global.before = runner.before.bind(runner);
 global.beforeEach = runner.beforeEach.bind(runner);
 
-export { runner, Logger };
+export {
+    runner,
+    Logger,
+};
