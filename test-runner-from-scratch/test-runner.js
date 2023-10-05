@@ -1,58 +1,136 @@
-import { AsyncResource, executionAsyncResource } from 'node:async_hooks';
-const asyncResource = new AsyncResource('TEST');
+import { EventEmitter } from 'events';
+import { AsyncLocalStorage } from 'async_hooks';
+const asyncLocalStorage = new AsyncLocalStorage();
+const buildDependencyTree = (suiteStack, message) => {
+    let formattedPath = '';
+    for (let i = 0; i < suiteStack.length; i++) {
+        if (['before', 'beforeEach', 'it'].find(item => item === suiteStack[i].type)) {
+            formattedPath += ' '.repeat(i * 4) + `${suiteStack[i].name}:\n`;
+        } else {
+            formattedPath += ' '.repeat(i * 4) + suiteStack[i].name + '\n';
+        }
+    }
 
-async function getContext(fn) {
-    return asyncResource.runInAsyncScope(async () => {
-        const context = {
-            getContextData: () => {
-                return executionAsyncResource().data ?? {};
-            },
-            setContextData: (data) => {
-                executionAsyncResource().data = data;
-            }
-        };
+    let indentedMessage = ' '.repeat(suiteStack.length * 4)
+    if (message)
+        indentedMessage = indentedMessage.concat(`Log: ${message.trimStart()}\n`);
 
-        return fn(context);
-
-    });
+    return formattedPath.concat(indentedMessage).trimEnd()
 }
 
+class Logger {
+    static log(message) {
+        const context = asyncLocalStorage.getStore() || {};
+        const suiteStack = context.suiteStack || [];
+        console.log(
+            '\n',
+            buildDependencyTree(suiteStack, message),
+            '\n'
+        );
+    }
+    static count(message) {
+        const context = asyncLocalStorage.getStore() || {};
+        const suiteStack = context.suiteStack || [];
+        console.count(
+            buildDependencyTree(suiteStack, message),
+        );
+    }
+}
 
-async function describe(name, fn) {
-    const tests = [];
-    const beforeHooks = [];
-    const beforeEachHooks = [];
+class TestSuite {
+    constructor(name) {
+        this.name = name;
+        this.tests = [];
+        this.beforeHooks = [];
+        this.beforeEachHooks = [];
+    }
+}
 
-    const it = (description, fn) => {
-        tests.push(async () => getContext(fn));
+class TestRunner extends EventEmitter {
+    constructor() {
+        super();
+
+        this.suitesStack = [];
     }
 
-    const before = (fn) => {
-        beforeHooks.push(fn);
+
+    describe(name, fn) {
+        const suite = new TestSuite(name);
+        this.suitesStack.push(suite);
+
+        asyncLocalStorage.run({
+            suiteStack: this.suitesStack.slice()
+        }, async () => {
+            await fn();
+            await this.runSuite(suite);
+            this.emit('suiteEnd', suite);
+            this.suitesStack.pop();
+        });
     }
 
-    const beforeEach = (fn) => {
-        beforeEachHooks.push(fn);
+    getCurrentSuite() {
+        return this.suitesStack[this.suitesStack.length - 1];  // This will now return the TestSuite instance
     }
 
-    fn({
-        it,
-        before,
-        beforeEach,
-    });
-
-    for (const hook of beforeHooks) {
-        await hook();
-    }
-
-    for (const test of tests) {
-        for (const hook of beforeEachHooks) {
+    async runSuite(suite) {
+        for (const hook of suite.beforeHooks) {
             await hook();
         }
-        await test();
+
+        for (const test of suite.tests) {
+            for (const hook of suite.beforeEachHooks) {
+                await hook();
+            }
+            await test();
+        }
     }
 
+    wrapTest(data, testFn) {
+        return async () => {
+            const startedAt = process.hrtime.bigint();
+
+            // Preserve current suite context and merge with test data
+            const currentContext = asyncLocalStorage.getStore() || {};
+            const info = {
+                ...data,
+                tree: buildDependencyTree(currentContext.suiteStack)
+            }
+            this.emit('testStart', info);
+
+            const mergedContext = {
+                suiteStack: [...currentContext.suiteStack, info]
+            };
+
+            await asyncLocalStorage.run(mergedContext, async () => {
+                await testFn(info);
+                const endedAt = process.hrtime.bigint();
+                const elapsedTimeMs = (Number(endedAt - startedAt) / 1_000_000).toFixed(2);
+                this.emit('testEnd', { ...info, elapsedTimeMs });
+            });
+        }
+
+    }
+    it(description, testFn) {
+        const suite = this.getCurrentSuite();
+        suite.tests.push(this.wrapTest({ name: description, type: 'it' }, testFn));
+    }
+
+    before(hookFn) {
+        const suite = this.getCurrentSuite();
+        suite.beforeHooks.push(this.wrapTest({ name: 'before', type: 'before' }, hookFn));
+    }
+
+    beforeEach(hookFn) {
+        const suite = this.getCurrentSuite();
+        suite.beforeEachHooks.push(this.wrapTest({ name: 'beforeEach', type: 'beforeEach' }, hookFn));
+    }
 }
 
+const runner = new TestRunner();
 
-export { describe };
+global.describe = runner.describe.bind(runner);
+global.it = runner.it.bind(runner);
+global.before = runner.before.bind(runner);
+global.beforeEach = runner.beforeEach.bind(runner);
+
+export { runner, Logger };

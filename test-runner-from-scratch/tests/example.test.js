@@ -1,64 +1,89 @@
 import { setTimeout } from 'node:timers/promises';
-import { deepStrictEqual } from 'node:assert'
-import { describe } from '../test-runner.js';
+import { deepStrictEqual } from 'node:assert';
+import { Logger, runner } from '../test-runner.js';
 
-describe('[parallel] - My suite 0', ({ it, before }) => {
+runner.on('testStart', (data) => {
+    Logger.log(`\n🚀 Test ${data.name} started.`);
+});
+
+runner.on('testEnd', ({ elapsedTimeMs, name }) => {
+    Logger.log(`✅ Test ${name} ended. Elapsed time: ${elapsedTimeMs}ms`);
+});
+
+describe('[parallel] - My suite 0', () => {
     before(async () => {
         await setTimeout(100);
-        console.count('[before] Hook on [My suite 0]');
+        Logger.count('[before] Hook on [My suite 0]');
     });
 
     it('test 0', async (ctx) => {
-        const expected = { message: 'context for test 0' }
-        ctx.setContextData(expected);
-        console.log('Test 0:', ctx.getContextData());
-        deepStrictEqual(ctx.getContextData(), expected)
+        const expected = {
+            name: 'test 0',
+            tree: '[parallel] - My suite 0',
+            type: 'it'
+        };
+        Logger.log('hey logger!');
+        deepStrictEqual(ctx, expected);
     });
-})
+});
 
-describe('[parallel] - My suite 1', ({ before, beforeEach }) => {
-
+describe('[parallel] - My suite 1', () => {
     before(async () => {
         await setTimeout(100);
-        console.count('\n[before] Hook on [My suite 1]');
+        Logger.count('\n[before] Hook on [My suite 1]');
     });
 
     beforeEach(async () => {
         await setTimeout(50);
-        console.count('\n[beforeEach] Hook on [My suite 1]');
+        Logger.count('\n[beforeEach] Hook on [My suite 1]');
     });
 
-    describe('My sub suite 1', ({ it, beforeEach }) => {
-        let items = []
+    describe('My sub suite 1', () => {
+        let items = [];
         beforeEach(async () => {
             await setTimeout(100);
-            items.push('')
-            console.count('\n[beforeEach] hook on sub suite [My sub suite 1]');
+            items.push('');
+            Logger.count('\n[beforeEach] hook on sub suite [My sub suite 1]');
         });
 
         it('test 1', async (ctx) => {
-            items.push('')
-            const expected = { message: 'context for test 1' }
-            ctx.setContextData(expected);
-            console.log('Test 1:', ctx.getContextData());
-            deepStrictEqual(ctx.getContextData(), expected)
+            items.push('');
+            const expected = {
+                name: 'test 1',
+                tree: '[parallel] - My suite 0\n    [parallel] - My suite 1\n        My sub suite 1',
+                type: 'it'
+            };
+            Logger.log('hey there!***');
+            deepStrictEqual(ctx, expected);
         });
 
         it('test 2', async (ctx) => {
-            items.push('')
-            const expected = { message: 'context for test 2' }
-            ctx.setContextData(expected);
-            console.log('Test 2:', ctx.getContextData());
-            deepStrictEqual(ctx.getContextData(), expected)
+            items.push('');
+            const expected = {
+                name: 'test 2',
+                tree: '[parallel] - My suite 0\n    [parallel] - My suite 1\n        My sub suite 1',
+                type: 'it'
+            };
+            deepStrictEqual(ctx, expected);
 
             before(async () => {
-                console.log('\n[before] hook inside [test 2] on suite [My sub suite 1]');
+                // Logger.log('\n[before] hook inside [test 2] on suite [My sub suite 1]');
             });
         });
 
         it('test 3 - items', async () => {
-            console.log('Items length:', items.length);
-            deepStrictEqual(items.length, 5)
-        })
-    })
+            // Logger.log('Items length:', items.length);
+            deepStrictEqual(items.length, 5);
+        });
+    });
+});
+
+describe('SuiteName', () => {
+    describe('SubSuite', () => {
+        describe('SubSuite', () => {
+            it('TestName', () => {
+                Logger.log('This is a message');
+            });
+        });
+    });
 });
