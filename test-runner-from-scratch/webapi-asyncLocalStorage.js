@@ -1,8 +1,14 @@
 import { createServer } from 'node:http'
-import { AsyncLocalStorage } from 'node:async_hooks'
 import { randomUUID } from 'node:crypto'
 import { setTimeout } from 'node:timers/promises'
+import { AsyncLocalStorage } from 'node:async_hooks'
 const storage = new AsyncLocalStorage()
+
+createServer((request, response) => {
+    const id = randomUUID()
+    storage.enterWith({ response, id })
+    throw new Error('oops!')
+}).listen(3000, () => console.log('running at 30000'))
 
 process.on('uncaughtException', () => {
     const { response, id } = storage.getStore()
@@ -10,12 +16,6 @@ process.on('uncaughtException', () => {
     console.log(`[server] ${shortenId} has broken but will be nicely handled!`)
     response.end(`wow! - req id: ${shortenId}`)
 })
-
-createServer((request, response) => {
-    const id = randomUUID()
-    storage.enterWith({ response, id })
-    throw new Error('oops!')
-}).listen(3000, () => console.log('running at 30000'))
 
 await setTimeout(1000)
 
