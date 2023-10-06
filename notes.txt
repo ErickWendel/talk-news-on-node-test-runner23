@@ -43,11 +43,21 @@ Intro
 
 - Never seen that? Since v16 - stable on v20
     Add Mocha/Jest like APIs to node:test #43415 - https://github.com/nodejs/node/issues/43415
-    test_runner: add Subtest to tap protocol output #43417 - https://github.com/nodejs/node/pull/43417
-    Request: mark test runner stable in Node 20.0.0 #46642 - https://github.com/nodejs/node/issues/46642
+
 
     -> expect, it
     -> we need your feedback
+    -> I like recreating things -> show videos on Youtube
+    -> I recreated the test runner to show you the magic behind it
+    ->
+        - Node.js uses the AsyncHooks to propagate contexts
+        - As a describe can be inside many describes the only way to fetch the origin is by using the AsyncHooks
+        - see an example:
+            - show web api
+            - show running
+        - going to the project I recreated it you'd notice that describe, it and others are global functions so you wouldn't know the tree on it
+        - so I used asyncLocalStorage to keep track of it and log the whole tree
+        - nice isn't it?
 
 - TAP -> Test All Things
     https://testanything.org/
@@ -57,24 +67,23 @@ Intro
         https://twitter.com/cjihrig/status/1703071165483188475
 
     what is TAP Protocol
+    test_runner: add Subtest to tap protocol output #43417 - https://github.com/nodejs/node/pull/43417
+- Stable since 20 - LTS is 18.18.0 and current is 20.8
+    Request: mark test runner stable in Node 20.0.0 #46642 - https://github.com/nodejs/node/issues/46642
+    but it has been ported to LTS too
+        https://nodejs.org/dist/latest-v18.x/docs/api/test.html
+
+    - we use the experimental the latest and start backporting to the LTS
 
 - Whats new?
     or not so new
 
-    - Watch mode
-        watch: add initial implementation for node --watch #44366 - https://github.com/nodejs/node/pull/44366
-        test_runner: support watch mode #45214 - https://github.com/nodejs/node/pull/45214#issuecomment-1311673737
-        - only changed tests!
-            show demo
-
-    - Concurrency support
-        test options
-            concurrency <number> | <boolean>
-                If a number is provided, then that many tests would run in parallel within the application thread. If true, all scheduled asynchronous tests run concurrently within the thread. If false, only one test runs at a time. If unspecified, subtests inherit this value from their parent. Default: false.
 
     - SnapShots
         assert.snapshot
             await snapshot(data, 'dbData')
+            assert: add snapshot assertion #44095 - https://github.com/nodejs/node/pull/44095
+            assert: remove assert.snapshot #46112 - https://github.com/nodejs/node/pull/46112
 
     - Mocking
         -> Old CallTracker deprecated
@@ -135,10 +144,14 @@ Intro
             - spec The spec reporter outputs the test results in a human-readable format.
             - dot The dot reporter outputs the test results in a compact format, where each passing test is represented by a ., and each - failing test is represented by a X.
             - junit The junit reporter outputs test results in a jUnit XML format
-
+    https://github.com/MoLow/reporters
         Support to multireporters
             #multiple-reporters
-                node --test-reporter=spec --test-reporter=dot --test-reporter-destination=stdout --test-reporter-destination=file.txt
+                node \
+                    --test-reporter=spec \
+                    --test-reporter=dot \
+                    --test-reporter-destination=stdout \
+                    --test-reporter-destination=file.txt
             Custom reporters
 
     - Code Coverage
@@ -147,6 +160,14 @@ Intro
 
     - Sharding
         test_runner: add shards support #48639 - https://github.com/nodejs/node/pull/48639
+
+        - Concurrency support
+            test options
+                concurrency <number> | <boolean>
+                    If a number is provided, then that many tests would run in parallel within the application thread.
+                    If true, all scheduled asynchronous tests run concurrently within the thread.
+                    If false, only one test runs at a time.
+                    If unspecified, subtests inherit this value from their parent. Default: false.
 
     - Support for Explicit Resource Management (new using keyword)
         - soon js will have a using keyword

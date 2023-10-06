@@ -54,6 +54,7 @@ class TestRunner extends EventEmitter {
     describe(name, fn) {
         const suite = new TestSuite(name);
         let currentStack;
+        this.emit('suiteStart', suite);
 
         // Fetch the current stack and append the new suite to it
         const context = asyncLocalStorage.getStore() || {};
@@ -67,12 +68,27 @@ class TestRunner extends EventEmitter {
             suiteStack: currentStack
         }, async () => {
             await fn();
-            await this.runSuite(suite, currentStack);
+            await this.#runSuite(suite, currentStack);
             this.emit('suiteEnd', suite);
         });
     }
 
-    getCurrentSuite() {
+    it(description, testFn) {
+        const suite = this.#getCurrentSuite();
+        suite.tests.push(this.#wrapTest({ name: description, type: 'it' }, testFn));
+    }
+
+    before(hookFn) {
+        const suite = this.#getCurrentSuite();
+        suite.beforeHooks.push(this.#wrapTest({ name: 'before', type: 'before' }, hookFn));
+    }
+
+    beforeEach(hookFn) {
+        const suite = this.#getCurrentSuite();
+        suite.beforeEachHooks.push(this.#wrapTest({ name: 'beforeEach', type: 'beforeEach' }, hookFn));
+    }
+
+    #getCurrentSuite() {
         const context = asyncLocalStorage.getStore() || {};
         const suiteStack = context.suiteStack;
         const currentSuite = suiteStack[suiteStack.length - 1];
@@ -82,7 +98,7 @@ class TestRunner extends EventEmitter {
         return currentSuite
     }
 
-    async runSuite(suite, currentStack) {
+    async #runSuite(suite) {
         for (const hook of suite.beforeHooks) {
             await hook();
         }
@@ -95,7 +111,7 @@ class TestRunner extends EventEmitter {
         }
     }
 
-    wrapTest(data, testFn) {
+    #wrapTest(data, testFn) {
         return async () => {
             const startedAt = process.hrtime.bigint();
 
@@ -114,26 +130,15 @@ class TestRunner extends EventEmitter {
             await asyncLocalStorage.run(mergedContext, async () => {
                 await testFn(info);
                 const endedAt = process.hrtime.bigint();
-                const elapsedTimeMs = (Number(endedAt - startedAt) / 1_000_000).toFixed(2);
+                const elapsedTimeMs = (
+                    Number(endedAt - startedAt)                    / 1_000_000
+                ).toFixed(2);
                 this.emit('testEnd', { ...info, elapsedTimeMs });
             });
         }
     }
 
-    it(description, testFn) {
-        const suite = this.getCurrentSuite();
-        suite.tests.push(this.wrapTest({ name: description, type: 'it' }, testFn));
-    }
 
-    before(hookFn) {
-        const suite = this.getCurrentSuite();
-        suite.beforeHooks.push(this.wrapTest({ name: 'before', type: 'before' }, hookFn));
-    }
-
-    beforeEach(hookFn) {
-        const suite = this.getCurrentSuite();
-        suite.beforeEachHooks.push(this.wrapTest({ name: 'beforeEach', type: 'beforeEach' }, hookFn));
-    }
 }
 
 const runner = new TestRunner();
